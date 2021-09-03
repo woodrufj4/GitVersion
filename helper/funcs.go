@@ -2,7 +2,6 @@ package helper
 
 import (
 	"os/exec"
-	"strconv"
 	"strings"
 
 	"github.com/Masterminds/semver"
@@ -44,35 +43,6 @@ func TagExists(tag string) (bool, error) {
 	}
 
 	return false, nil
-
-}
-
-// NumCommitsSinceTag retrieves the total number of commits since
-// the last known tag.
-//
-// If there aren't any tags, then it retrieves the total number of commits
-// in history.
-func NumCommitsSinceTag() (int, error) {
-
-	cmd1 := execCommand("git", "tags", "-n", "1", "--sort=-v:refname")
-	out, err := cmd1.Output()
-
-	lastTag := "HEAD"
-
-	if err == nil {
-		lastTag = string(out)
-	}
-
-	// There are no tags, so let's get the total number of commits.
-	cmd2 := execCommand("git", "rev-list", lastTag, "--count")
-
-	countOut, err := cmd2.Output()
-
-	if err != nil {
-		return 0, err
-	}
-
-	return strconv.Atoi(strings.TrimSpace(string(countOut)))
 
 }
 
@@ -146,9 +116,9 @@ func CurrentBranchName() (string, error) {
 	return strings.TrimSpace(string(out)), nil
 }
 
-// CurrentCommitMessage retrieves the last commit's message subject (first line).
-func CurrentCommitSubject() (string, error) {
-	cmd := execCommand("git", "log", "-n", "1", "--format=%s")
+// CurrentCommitMessage retrieves the last commit's message.
+func CurrentCommitMessage() (string, error) {
+	cmd := execCommand("git", "log", "-n", "1", "--format=%B")
 	out, err := cmd.Output()
 
 	if err != nil {
