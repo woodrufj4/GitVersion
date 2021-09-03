@@ -2,6 +2,7 @@ package command
 
 import (
 	"encoding/json"
+	"flag"
 	"fmt"
 	"strings"
 
@@ -12,7 +13,13 @@ import (
 )
 
 type DeriveCommand struct {
+	args   []string
 	Logger hclog.Logger
+	config *DeriveConfig
+}
+
+type DeriveConfig struct {
+	PrettyPrint bool
 }
 
 func (d *DeriveCommand) Help() string {
@@ -48,7 +55,14 @@ func (d *DeriveCommand) OutputVersionDetail(input *version.VersionDetailInput) i
 		return 1
 	}
 
-	bytes, err := json.Marshal(detail)
+	var bytes []byte
+
+	if d.config.PrettyPrint {
+		bytes, err = json.MarshalIndent(detail, "", "  ")
+
+	} else {
+		bytes, err = json.Marshal(detail)
+	}
 
 	if err != nil {
 		d.Logger.Error("unable to convert version detail to JSON format", "error", err.Error())
@@ -66,8 +80,40 @@ func (d *DeriveCommand) OutputVersionDetail(input *version.VersionDetailInput) i
 
 }
 
+func (d *DeriveCommand) parseFlags() error {
+
+	fs := flag.NewFlagSet("derive command", flag.ContinueOnError)
+
+	fs.Usage = func() {
+		fmt.Println(d.Help())
+	}
+
+	config := &DeriveConfig{}
+
+	fs.BoolVar(&config.PrettyPrint, "pretty", false, "")
+
+	err := fs.Parse(d.args)
+
+	if err != nil {
+		return err
+	}
+
+	d.config = config
+
+	return nil
+}
+
 // Run executes the derive command to discern the tags from the current commit or branch name.
 func (d *DeriveCommand) Run(args []string) int {
+
+	d.args = args
+
+	err := d.parseFlags()
+
+	if err != nil {
+		d.Logger.Error("unable to parse command arguments", "error", err.Error())
+		return 1
+	}
 
 	currentBranchName, err := helper.CurrentBranchName()
 
