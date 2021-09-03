@@ -142,6 +142,8 @@ func (d *DeriveCommand) Run(args []string) int {
 		BranchName: currentBranchName,
 	}
 
+	highestSemver := &semver.Version{}
+
 	for _, tag := range currentTags {
 		// Check if the tag is valid Semver format
 		tagVersion, err := semver.NewVersion(tag)
@@ -150,9 +152,15 @@ func (d *DeriveCommand) Run(args []string) int {
 			continue
 		}
 
-		versionDetailInput.Semver = tagVersion
-		return d.OutputVersionDetail(versionDetailInput)
+		if tagVersion.GreaterThan(highestSemver) {
+			highestSemver = tagVersion
+		}
 
+	}
+
+	if highestSemver.Original() != "" {
+		versionDetailInput.Semver = highestSemver
+		return d.OutputVersionDetail(versionDetailInput)
 	}
 
 	// None of the current tags were valid SemVer format, let's get the tag from
