@@ -1,0 +1,53 @@
+name: Build
+
+on:
+  push:
+    branches:
+      - main
+      - release**
+
+jobs:
+  build:
+    name: Build
+    runs-on: ubuntu-20.04
+    steps:
+
+      - name: Check out code
+        uses: actions/checkout@v2
+
+      - name: Set up Go 1.17.x
+        uses: actions/setup-go@v2
+        with:
+          go-version: ~1.17
+
+      - name: Build
+        run: |
+          go build .
+
+      - name: Build with tags
+        shell: bash
+        run: |
+          set -e
+          export GIT_INFO=$(./GitVersion derive)
+          export GIT_CORE=$(echo $GIT_INFO | jq -r '.core')
+          export GIT_PRERELEASE=$(echo $GIT_INFO | jq -r '.preRelease')
+          export GIT_METADATA=$(echo $GIT_INFO | jq -r '.metadata')
+          export LD_FLAGS="-X 'github.com/woodrufj4/GitVersion/version.VersionCore=$GIT_CORE' -X 'github.com/woodrufj4/GitVersion/version.VersionPrerelease=$GIT_PRERELEASE' -X 'github.com/woodrufj4/GitVersion/version.VersionMetadata=$GIT_METADATA'"
+          go build -ldflags="$LD_FLAGS" -o gitversion .
+
+      - name: Package artifacts
+        shell: bash
+        run: |
+          set -e
+          mkdir deploy-artifacts
+          export GIT_SEMVER=$(./gitversion --version)
+          zip -r "deploy-artifacts/gitversion_${GIT_SEMVER}_linux_amd64.zip" gitversion
+          cd deploy-artifacts
+          sha256sum "gitversion_${GIT_SEMVER}_linux_amd64.zip" > "gitversion_${GIT_SEMVER}_CHECKSUMS"
+          cd ..
+
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v2
+        with:
+          name: binary-with-checksum
+          path: deploy-artifacts
