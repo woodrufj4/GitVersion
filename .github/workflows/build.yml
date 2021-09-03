@@ -4,13 +4,16 @@ on:
   push:
     branches:
       - main
-      - release*
+      - release**
 
 jobs:
   build:
     name: Build
     runs-on: ubuntu-20.04
     steps:
+
+      - name: Check out code
+        uses: actions/checkout@v2
 
       - name: Set up Go 1.17.x
         uses: actions/setup-go@v2
@@ -30,7 +33,7 @@ jobs:
           export GIT_PRERELEASE=$(echo $GIT_INFO | jq -r '.preRelease')
           export GIT_METADATA=$(echo $GIT_INFO | jq -r '.metadata')
           export LD_FLAGS="-X 'github.com/woodrufj4/GitVersion/version.VersionCore=$GIT_CORE' -X 'github.com/woodrufj4/GitVersion/version.VersionPrerelease=$GIT_PRERELEASE' -X 'github.com/woodrufj4/GitVersion/version.VersionMetadata=$GIT_METADATA'"
-          go build -ldflags=$LD_FLAGS -o gitversion .
+          go build -ldflags="$LD_FLAGS" -o gitversion .
 
       - name: Package artifacts
         shell: bash
