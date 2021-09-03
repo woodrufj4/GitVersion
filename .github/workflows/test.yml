@@ -1,0 +1,39 @@
+name: Test Workflow
+
+on: [push]
+
+jobs:
+
+  test:
+    name: Test Job
+    runs-on: ubuntu-20.04
+    steps:
+      - name: Set up Go 1.17.x
+        uses: actions/setup-go@v2
+        with:
+          go-version: ~1.17
+
+      - name: Setup gotestsum
+        run: |
+          curl -sSL --fail -o /tmp/gotestsum.tar.gz "https://github.com/gotestyourself/gotestsum/releases/download/v${INPUT_VERSION}/gotestsum_${INPUT_VERSION}_linux_amd64.tar.gz"
+          tar -C /tmp -xzf /tmp/gotestsum.tar.gz
+          sudo mv /tmp/gotestsum /usr/local/bin/gotestsum
+          sudo chmod 0755 /usr/local/bin/gotestsum
+        shell: bash
+        with:
+          version: 1.7.0
+
+      - name: Check out code
+        uses: actions/checkout@v2
+
+      - name: Test Project
+        run: |
+          gotestsum --format="short-verbose" --junitfile "test-results/test-results.xml" -- -coverprofile="test-results/coverage.out" ./...
+
+      - name: Upload test results
+        uses: actions/upload-artifact@v2
+        with:
+          name: test-results
+          path: |
+            test-results
+            !test-results/.gitkeep
