@@ -14,6 +14,8 @@ jobs:
 
       - name: Check out code
         uses: actions/checkout@v2
+        with:
+          fetch-depth: 0
 
       - name: Set up Go 1.17.x
         uses: actions/setup-go@v2
@@ -40,7 +42,7 @@ jobs:
         run: |
           set -e
           mkdir deploy-artifacts
-          export GIT_SEMVER=$(./gitversion --version)
+          export GIT_SEMVER=$(./gitversion --version 2>&1)
           zip -r "deploy-artifacts/gitversion_${GIT_SEMVER}_linux_amd64.zip" gitversion
           cd deploy-artifacts
           sha256sum "gitversion_${GIT_SEMVER}_linux_amd64.zip" > "gitversion_${GIT_SEMVER}_CHECKSUMS"
